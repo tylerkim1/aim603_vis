@@ -178,12 +178,14 @@ function showTarget(r) {
 const resultPad = $('resultPad'), resultCtx = resultPad.getContext('2d');
 const resultBars = new RankedBars($('resultBars'), WORDS, { rows: 5, rowHeight: 36 });
 let finishing = false;
+// 선 중요도를 계산하는 동안에는 결과 화면을 떠나지 못하게 한다
+const lockResultNav = on => { for (const b of $('result').querySelectorAll('.bar .btn')) b.disabled = on; };
 
 $('doneBtn').onclick = finish;
 
 async function finish() {
   if (finishing || strokes.length === 0) return;
-  $('againBtn').disabled=true;
+  lockResultNav(true);
   finishing = true; locked = true; pad.classList.add('locked');
   $('doneBtn').disabled = true;
   clearTimeout(timer);
@@ -211,7 +213,7 @@ async function finish() {
   if (units.length < 2) {
     $('importanceCaption').textContent = '선이 하나뿐이라 선별 중요도는 분석하지 않았습니다.';
     $('resultStatus').textContent = `분석 ${(performance.now() - t0).toFixed(0)} ms`;
-    finishing = false; $('againBtn').disabled=false; return;
+    finishing = false; lockResultNav(false); return;
   }
 
   // 단위를 하나씩 빼고 다시 판단시켜 '정답 단어' 상대 점수가 얼마나 떨어지는지 잰다
@@ -239,7 +241,7 @@ async function finish() {
     $('importanceCaption').textContent = `어느 선을 지워도 "${w.ko}"라는 판단이 거의 달라지지 않았습니다. 특정 선이 아니라 전체 모양으로 판단한 것으로 보입니다.`;
   }
   $('resultStatus').textContent = `분석 ${(performance.now() - t0).toFixed(0)} ms (추론 ${units.length + 1}회) · ${MODEL_ID} (${clip.dtype}, ${clip.device})`;
-  finishing = false; $('againBtn').disabled=false;
+  finishing = false; lockResultNav(false);
 }
 
 // 선이 많으면 그린 순서대로 묶어서 MAX_UNITS개 이하의 단위로 만든다
@@ -283,12 +285,17 @@ async function show(id) {
   switching = false;
 }
 for (const b of startBtns) b.onclick = () => { show('studio'); redrawPad(); };
-$('againBtn').onclick = () => {
-  if(finishing) return;
+function resetDrawing() {
   strokes = []; locked = false; pad.classList.remove('locked');
   redrawPad(); showEmpty(); lastResult = null;
   $('doneBtn').disabled = true;
-  show('studio');
+}
+$('againBtn').onclick = () => { if (finishing) return; resetDrawing(); show('studio'); };
+// 처음 화면으로. 그리던 그림은 남겨 두고, 결과 화면에서 돌아갈 때만 새로 그릴 수 있게 비운다
+for (const b of document.querySelectorAll('.home-btn')) b.onclick = () => {
+  if (finishing || switching) return;
+  if (!$('result').hidden) resetDrawing();
+  show('intro');
 };
 
 redrawPad();

@@ -38,17 +38,26 @@
         <div class="space-panel" data-reveal style="--d:120ms">
           <div class="space-toolbar"><div class="sample-tabs" role="group" aria-label="예시 그림 선택"></div><div class="map-legend"><span><i class="orange"></i>그림</span><span><i class="teal"></i>가장 가까운 후보</span></div></div>
           <div class="space-layout"><div id="introMap"></div><aside class="sample-side"><div class="sample-top"><canvas id="sampleSketch" width="320" height="320" aria-label="자동 생성 예시 그림"></canvas><div><span class="micro">예시 그림</span><strong id="sampleName"></strong><button id="replaySketch" class="text-link" type="button">다시 보기 ↻</button></div></div><p class="list-heading">그림과 가까운 단어 <span>cosine</span></p><div id="introNeighbors"></div><p id="selectionNote" class="selection-note" aria-live="polite"></p></aside></div>
-          <div class="map-footer"><span>실제 모델 값 · 자동 생성 스케치</span><details><summary>이 지도 읽는 법</summary><p id="projectionNote">그림을 중심에 고정하고, 실제 512차원 cosine이 높은 후보일수록 가깝게 놓습니다. 작은 차이를 읽기 쉽게 각 그림의 후보 범위에 맞춰 거리를 펼칩니다. 중심과 후보의 상대적인 유사도만 나타내며, 단어끼리의 거리나 방향은 의미하지 않습니다. 절대 유사도는 cosine 수치를 확인하세요.</p></details></div>
+          <div class="map-footer"><span>실제 모델 값 · 자동 생성 스케치</span><span>단어끼리의 거리와 방향에는 의미가 없습니다</span></div>
         </div>
-        <p class="projection-caption">중심에서의 거리 = 이 그림과의 상대 유사도. 단어끼리의 거리와 방향에는 의미를 부여하지 않습니다.</p>
       </article>
       <article class="story" id="story2">
-        <div class="section-heading" data-reveal><div><p class="kicker">02 / COSINE SIMILARITY</p><h2>가깝다는 건, 각도가 더 작다는 것</h2></div><p>두 벡터의 각도가 작을수록 cosine은 커집니다.<br>절대 각도보다 후보 사이의 차이를 봅니다.</p></div>
+        <div class="section-heading" data-reveal><div><p class="kicker">02 / COSINE SIMILARITY</p><h2>가깝다는 건, 각도가 더 작다는 것</h2></div><p>두 벡터의 각도가 작을수록 cosine은 커집니다.<br>값의 크기보다 후보 사이의 차이를 봅니다.</p></div>
         <div class="comparison-grid">
           <div class="angle-card" data-reveal style="--d:100ms"><p class="list-heading">그림 ↔ 선택한 단어 <span id="angleTarget"></span></p><svg id="cosineAngle" viewBox="0 0 400 226" role="img" aria-label="그림 벡터와 후보 40개 문장 벡터 사이의 실제 각도"></svg><div class="angle-stats"><span>각도 <strong id="angleDegrees"></strong></span><span>cosine <strong id="angleCosine"></strong></span><span>순위 <strong id="angleRank"></strong></span></div><div id="angleChoices" class="angle-choices"></div>
-            <p class="zoom-head"><strong>후보 40개의 각도만 확대</strong><span id="zoomRange"></span></p><svg id="angleZoom" viewBox="0 0 400 104" role="img" aria-label="후보 40개의 각도 분포 확대"></svg>
-            <p class="angle-note">그림과 문장은 서로 다른 종류의 입력이라, CLIP에서는 가장 잘 맞는 짝도 70° 안팎입니다. 그래서 0°에 가까운지가 아니라 <b>다른 후보보다 얼마나 더 작은지</b>를 봅니다.</p></div>
-          <div class="scores-card" data-reveal style="--d:220ms"><p class="list-heading">후보 사이의 상대 점수 <span>합계 100%</span></p><div id="introScores"></div><p class="score-note">cosine 차이를 softmax로 변환한 상대값입니다.<br><b>정답일 확률을 뜻하지 않으며</b>, 후보 목록에 따라 달라집니다.</p><details open><summary>계산식 보기</summary><p class="formula">cos θ = (그림 · 문장) / (|그림| × |문장|)<br>상대 점수 = exp(100 × cosine) / 모든 후보의 exp 값 합</p></details></div>
+            <p class="zoom-head"><strong>후보 40개의 각도만 확대</strong><span id="zoomRange"></span></p><svg id="angleZoom" viewBox="0 0 400 190" role="img" aria-label="후보 40개의 각도 분포 확대"></svg></div>
+          <div class="scores-card" data-reveal style="--d:220ms"><p class="list-heading">후보 사이의 상대 점수 <span>합계 100%</span></p><div id="introScores"></div><p class="score-note">cosine 차이를 softmax로 변환한 상대값입니다.<br><b>정답일 확률을 뜻하지 않으며</b>, 후보 목록에 따라 달라집니다.</p><div class="formula" aria-label="계산식">
+            <p class="formula-title">계산식</p>
+            <math display="block"><mrow><mi>cos</mi><mo>&#x2061;</mo><mspace width="0.18em"/><mi>θ</mi><mo>=</mo><mfrac><mrow><mi>𝐯</mi><mo>·</mo><mi>𝐭</mi></mrow><mrow><mo stretchy="false">‖</mo><mi>𝐯</mi><mo stretchy="false">‖</mo><mspace width="0.22em"/><mo stretchy="false">‖</mo><mi>𝐭</mi><mo stretchy="false">‖</mo></mrow></mfrac></mrow></math>
+            <math display="block"><mrow><msub><mi>p</mi><mi>i</mi></msub><mo>=</mo><mfrac><mrow displaystyle="true"><mi>exp</mi><mo>&#x2061;</mo><mo stretchy="false">(</mo><mn>100</mn><mo>·</mo><mi>cos</mi><mo>&#x2061;</mo><mspace width="0.18em"/><msub><mi>θ</mi><mi>i</mi></msub><mo stretchy="false">)</mo></mrow><mrow displaystyle="true"><munderover><mo>∑</mo><mrow><mi>j</mi><mo>=</mo><mn>1</mn></mrow><mn>40</mn></munderover><mspace width="0.2em"/><mi>exp</mi><mo>&#x2061;</mo><mo stretchy="false">(</mo><mn>100</mn><mo>·</mo><mi>cos</mi><mo>&#x2061;</mo><mspace width="0.18em"/><msub><mi>θ</mi><mi>j</mi></msub><mo stretchy="false">)</mo></mrow></mfrac></mrow></math>
+            <ul class="formula-key"><li><b>𝐯</b>그림 벡터</li><li><b>𝐭</b>문장 벡터</li><li><b><i>θ</i></b>두 벡터 사이 각도</li><li><b><i>p<sub>i</sub></i></b>후보별 상대 점수</li></ul>
+          </div></div>
+          <div id="angleAmp" class="amp" data-reveal>
+            <div class="amp-head"><div><p class="amp-title">작은 각도 차이가 큰 점수 차이가 되는 과정</p><p class="amp-sub"><span id="ampPair"></span><button id="ampReplay" class="text-link" type="button">다시 재생 ↻</button></p></div>
+              <div class="amp-read"><span><small>배율</small><strong id="ampScale"></strong></span><span class="first"><small id="ampTopName"></small><strong id="ampTop"></strong></span><span><small id="ampOtherName"></small><strong id="ampOther"></strong></span><span class="hot"><small>점수 차이</small><strong id="ampRatio"></strong></span></div></div>
+            <svg id="ampChart" viewBox="0 0 1000 312" role="img" aria-label="cosine에 곱하는 배율이 1에서 100으로 커질 때 후보 40개의 상대 점수 변화"></svg>
+            <ul class="amp-why"><li><b>%의 뜻</b>후보 40개 안에서 모델이 각 단어에 준 몫입니다(합계 100%). 40개 중 어느 쪽으로 기울었는지를 나타내며, 실제로 정답일 확률은 아닙니다.</li><li><b>계산</b>위 계산식의 100 자리에 배율을 넣은 값입니다. cosine에 배율을 곱해 지수(exp)에 넣고, 40개의 합으로 나눕니다. <span id="ampMath"></span></li><li><b>왜 100</b>CLIP이 학습 과정에서 정한 배율입니다. 후보 사이의 cosine 차이는 0.1도 안 되어, 그대로 쓰면 40개의 점수가 거의 같습니다.</li></ul>
+          </div>
         </div>
       </article>
     </div>
@@ -58,7 +67,7 @@
   <!-- 2. 그리기 -->
   <section id="studio" class="screen" hidden>
     <header class="bar">
-      <p class="eyebrow">무엇을 그렸나요?</p>
+      <div class="bar-left"><button class="btn home-btn" type="button">← 처음으로</button><p class="eyebrow">무엇을 그렸나요?</p></div>
       <span class="hint">한 획마다, 그림의 의미를 따라갑니다</span>
     </header>
     <div class="studio-grid">
@@ -86,7 +95,7 @@
   <!-- 3. 결과 -->
   <section id="result" class="screen" hidden>
     <header class="bar">
-      <p class="eyebrow">결과</p>
+      <div class="bar-left"><button class="btn home-btn" type="button">← 처음으로</button><p class="eyebrow">결과</p></div>
       <button id="againBtn" class="btn">다시 그리기</button>
     </header>
     <div class="result-grid">
