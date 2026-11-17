@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>무엇을 그렸나요? — KAIST Visualization Project</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+
+<!-- 모든 화면 공통 상단 바 -->
+<header class="topbar">
+  <span class="tb-cell tb-brand">KAIST Visualization Project</span>
+  <span class="tb-cell tb-title">무엇을 그렸나요?</span>
+  <span class="tb-cell tb-model" id="modelInfo">CLIP ViT-B/32</span>
+  <span class="tb-cell tb-status"><i class="dot" id="statusDot"></i><span id="modelStatus">모델 준비 중</span></span>
+</header>
+
+<main>
+
+  <!-- 1. 인트로 -->
+  <section id="intro" class="screen">
+    <div class="hero-grid">
+      <div class="hero-title">
+        <p class="mono-label">Draw → Embed → Compare</p>
+        <p class="lead">선 몇 개를 그려 보세요. 이미지와 문장을 함께 배운 모델 <b>CLIP</b>이
+          그 그림을 무엇으로 읽는지, 어떤 선을 보고 그렇게 판단했는지 보여드립니다.</p>
+        <p id="loadError" class="error" hidden></p>
+        <h1>무엇을<br>그렸나요?</h1>
+      </div>
+      <!-- 선을 하나씩 그을 때마다 판단이 바뀌는 모습. 값은 실제 모델로 미리 계산한 것 (js/intro-data.js) -->
+      <div class="hero-demo" id="heroDemo">
+        <p class="mono-label">선 하나마다 바뀌는 판단 <span class="demo-step"></span></p>
+        <canvas class="demo-pad" width="720" height="720" aria-label="예시: 집을 한 획씩 그리는 모습"></canvas>
+        <div class="demo-read">
+          <span class="demo-word">—</span>
+          <span class="demo-prob"></span>
+        </div>
+        <div class="demo-bars"></div>
+        <p class="demo-note">예시 그림에 대한 실제 계산 결과</p>
+      </div>
+      <div class="hero-stat"><span class="stat-num">512</span><span class="stat-label">그림 하나가 바뀌는 숫자의 개수</span></div>
+      <div class="hero-stat"><span class="stat-num">40</span><span class="stat-label">비교하는 후보 단어</span></div>
+      <div class="hero-stat"><span class="stat-num">0</span><span class="stat-label">서버로 보내는 그림 — 모든 계산은 브라우저 안에서</span></div>
+      <button id="startBtn" class="cell-btn primary start-btn hero-start" disabled>
+        <span class="start-label">모델 준비 중</span><span class="arrow">→</span>
+        <span class="progress"><span id="progressBar"></span></span>
+      </button>
+    </div>
+
+    <div class="section-bar">
+      <span>작동 원리</span><span>사이트가 실제로 하는 계산, 4단계</span><span>01 — 04 ↓</span>
+    </div>
+
+    <!-- 작동 원리: 사이트와 같은 계산을 순서대로 보여준다. 숫자는 실제 모델로 미리 계산한 값 (js/intro-data.js) -->
+    <div id="explainer">
+
+      <article class="story" id="story1">
+        <div class="story-side">
+          <span class="story-num">01</span>
+          <h2>그림을 숫자로</h2>
+          <p class="story-text">CLIP은 그림을 숫자 512개로 바꿉니다. 이 숫자 묶음을 <b>벡터</b>, 또는 <b>임베딩</b>이라고 부릅니다.</p>
+          <button class="replay" type="button">↻ 다시 보기</button>
+        </div>
+        <div class="story-visual">
+          <div class="vec-row">
+            <canvas class="ex-sketch" width="560" height="560" aria-label="예시 그림: 집"></canvas>
+            <span class="ex-arrow">→</span>
+            <canvas class="ex-grid" width="1120" height="560" aria-label="그림 벡터 512개 값"></canvas>
+            <div class="vec-caption">
+              <p class="ex-nums"></p>
+              <div class="legend"><span>작은 값</span><span class="ramp vec"></span><span>큰 값</span><span>· 칸 하나가 숫자 하나</span></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="story" id="story2">
+        <div class="story-side">
+          <span class="story-num">02</span>
+          <h2>단어도 숫자로</h2>
+          <p class="story-text">후보 단어 40개를 각각 문장으로 만들어, 같은 방식으로 숫자 512개로 바꿉니다.
+            그림과 문장이 같은 공간의 벡터가 되므로 서로 비교할 수 있습니다.</p>
+          <button class="replay" type="button">↻ 다시 보기</button>
+        </div>
+        <div class="story-visual">
+          <div class="vec-row">
+            <div class="ex-sentence-box"><p class="ex-sentence"></p></div>
+            <span class="ex-arrow">→</span>
+            <canvas class="ex-grid" width="1120" height="560" aria-label="문장 벡터 512개 값"></canvas>
+            <div class="vec-caption">
+              <p class="ex-nums"></p>
+              <div class="legend"><span>작은 값</span><span class="ramp vec"></span><span>큰 값</span></div>
+            </div>
+          </div>
+          <p class="mono-label chips-label">후보 단어 40개 — 모두 미리 벡터로 바꿔 둡니다</p>
+          <div class="ex-chips"></div>
+        </div>
+      </article>
+
+      <article class="story" id="story3">
+        <div class="story-side">
+          <span class="story-num">03</span>
+          <h2>각도로 비교하기</h2>
+          <p class="story-text">두 벡터가 이루는 <b>각도</b>가 작을수록 비슷하다고 봅니다.
+            <b>cosine similarity</b>는 그 각도의 코사인 값으로, 같은 방향(0°)이면 1, 직각(90°)이면 0입니다.</p>
+          <button class="replay" type="button">↻ 다시 보기</button>
+        </div>
+        <div class="story-visual">
+          <div class="ang-row">
+            <svg class="ang" viewBox="0 0 480 420" aria-label="그림 벡터와 단어 벡터 사이의 각도"></svg>
+            <div class="ang-readout">
+              <div class="ro"><span class="k">비교 대상</span><span class="v small ro-target">–</span></div>
+              <div class="ro"><span class="k">각도</span><span class="v ro-deg">–</span></div>
+              <div class="ro"><span class="k">cosine similarity</span><span class="v ro-cos">–</span></div>
+            </div>
+          </div>
+          <p class="story-note" id="angNote"></p>
+        </div>
+      </article>
+
+      <article class="story" id="story4">
+        <div class="story-side">
+          <span class="story-num">04</span>
+          <h2>작은 차이를 확률로</h2>
+          <p class="story-text">40개 단어의 cosine에 100을 곱하고 지수함수로 키운 뒤, 합이 100%가 되도록 나눕니다.
+            이 계산을 <b>softmax</b>라고 하며, CLIP이 학습할 때 쓰는 방식과 같습니다.</p>
+          <button class="replay" type="button">↻ 다시 보기</button>
+        </div>
+        <div class="story-visual">
+          <div class="sm">
+            <div class="sm-head">
+              <span></span>
+              <span class="sm-col">cosine similarity <span class="axis">0 ~ 1</span></span>
+              <span class="sm-arrow">→</span>
+              <span class="sm-col sm-head-prob">확률 <span class="axis">0 ~ 100%</span></span>
+            </div>
+            <div class="sm-rows"></div>
+            <p class="sm-rest"></p>
+          </div>
+          <p class="story-note sm-example"></p>
+          <p class="story-note">다음 화면의 %가 바로 이 확률입니다. ‘40개 후보 중에서’의 상대값이라, 후보에 없는 것을 그리면 가장 비슷한 후보가 뽑힙니다.</p>
+        </div>
+      </article>
+    </div>
+
+    <!-- 데모 발표용: 이 시각화에 대한 다섯 가지 질문 -->
+    <div class="section-bar">
+      <span>프로젝트 노트</span><span>이 시각화에 대한 다섯 가지 질문</span><span>Q1 — Q5</span>
+    </div>
+    <div class="notes">
+      <article class="note">
+        <p class="mono-label"><b>Q1</b> To whom is it addressed?</p>
+        <h3>누구를 위한 것인가</h3>
+        <p>AI 배경지식이 없는 전시 관람객입니다. 수식이나 용어를 몰라도, 직접 그려 보는 것만으로 ‘AI가 그림을 어떻게 판단하는지’ 이해할 수 있게 만들었습니다.</p>
+      </article>
+      <article class="note">
+        <p class="mono-label"><b>Q2</b> What should be delivered?</p>
+        <h3>무엇을 전달하는가</h3>
+        <p>CLIP은 그림을 ‘보는’ 것이 아니라 숫자 512개로 바꾸고, 단어 문장과의 각도를 잽니다. 그래서 답은 언제나 ‘후보 중 가장 가까운 것’이며, 어떤 선이 그 판단을 좌우했는지도 볼 수 있습니다.</p>
+      </article>
+      <article class="note">
+        <p class="mono-label"><b>Q3</b> Why a visualization — not a proof or a figure?</p>
+        <h3>왜 증명이나 그림 한 장이 아닌가</h3>
+        <p>판단은 그리는 사람의 그림마다 다릅니다. 그림 한 장은 예시 하나만 보여 주지만, 여기서는 내가 그은 선 하나하나가 판단을 어떻게 바꾸는지, 내 그림의 어느 선이 중요했는지 바로 확인할 수 있습니다.
+          ‘40개 단어가 모두 72.7°~77.1°에 몰려 있다’는 사실도 식보다 각도기로 볼 때 와닿습니다.</p>
+      </article>
+      <article class="note">
+        <p class="mono-label"><b>Q4</b> What are the aesthetic criteria?</p>
+        <h3>미적 기준</h3>
+        <p>① 무채색: 입력이 흑백 선 그림이라 색은 정보 없이 시선만 뺏습니다. ② 데이터만 강조: 1등만 검정, 나머지는 회색. ③ 꽉 찬 그리드와 큰 글자: 전시장 거리에서도 읽히도록. ④ 움직임은 계산 순서를 따라갈 때만 씁니다.</p>
+      </article>
+      <article class="note">
+        <p class="mono-label"><b>Q5</b> Main technical difficulty, and the way past it?</p>
+        <h3>가장 어려웠던 점과 해결</h3>
+        <p>그림이 대상에 ‘얼마나 맞는지’를 공정하게 점수화하는 것. 그림끼리 비교하면 같은 나무도 스타일이 다르면 점수가 낮았고(0.73, 다른 종류 평균 0.76보다 낮음), 그림과 문장의 cosine은 0.22~0.30에 몰려 있었습니다.
+          단어 문장과 비교하고, CLIP의 학습 방식 그대로 softmax로 후보 간 확률을 만들어 해결했습니다. 계산은 서버 없이 브라우저에서 선 하나당 약 0.3초입니다.</p>
+      </article>
+    </div>
+
+    <button class="cta-block start-btn" disabled>
+      <span class="mono-label">Ready</span>
+      <span class="cta-line"><span class="start-label">모델 준비 중</span><span class="arrow">→</span></span>
+    </button>
+  </section>
+
+  <!-- 2. 그리기 -->
+  <section id="studio" class="screen work" hidden>
+    <div class="work-grid">
+      <div class="pad-cell"><canvas id="pad" width="1024" height="1024" aria-label="그리기 캔버스"></canvas></div>
+      <div class="panel">
+        <div class="panel-head">
+          <p class="mono-label">CLIP이 보는 것 <span class="live">● Live</span></p>
+          <span id="liveWord" class="hero-word empty">—</span>
+          <p id="liveSub" class="hero-sub">아직 아무것도 그리지 않았어요</p>
+        </div>
+        <div class="panel-body">
+          <p class="mono-label">후보 40개 중 상위 10개 · 확률</p>
+          <div id="liveBars"></div>
+        </div>
+      </div>
+      <div class="tools">
+        <button id="undoBtn" class="cell-btn">되돌리기</button>
+        <button id="clearBtn" class="cell-btn">모두 지우기</button>
+        <button id="doneBtn" class="cell-btn primary" disabled><span>완료</span><span class="arrow">→</span></button>
+      </div>
+      <div class="foot-cell"><p id="liveStatus" class="status">그리는 동안 오른쪽이 실시간으로 바뀝니다</p></div>
+    </div>
+  </section>
+
+  <!-- 3. 결과 -->
+  <section id="result" class="screen work" hidden>
+    <div class="work-grid">
+      <div class="pad-cell"><canvas id="resultPad" width="1024" height="1024" aria-label="선 중요도가 표시된 그림"></canvas></div>
+      <div class="panel">
+        <div class="panel-head">
+          <p class="mono-label">CLIP은 이 그림을</p>
+          <span id="resultWord" class="hero-word big">—</span>
+          <p id="resultSub" class="hero-sub"></p>
+        </div>
+        <div class="panel-body">
+          <p class="mono-label">후보 40개 중 상위 10개 · 확률</p>
+          <div id="resultBars"></div>
+          <details>
+            <summary>후보 40개 전체 순위 보기</summary>
+            <table id="fullTable" class="full"></table>
+          </details>
+          <p id="resultStatus" class="status"></p>
+        </div>
+      </div>
+      <div class="foot-cell caption-cell">
+        <p id="importanceCaption" class="caption"></p>
+        <div id="importanceLegend" class="legend" hidden>
+          <span>판단에 덜 중요한 선</span><span class="ramp"></span><span>중요한 선</span>
+        </div>
+      </div>
+      <div class="tools single">
+        <button id="againBtn" class="cell-btn primary"><span>다시 그리기</span><span class="arrow">→</span></button>
+      </div>
+    </div>
+  </section>
+
+</main>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

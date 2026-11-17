@@ -1,0 +1,41 @@
+{
+  "layoutCases": 7,
+  "samples": [
+    {
+      "name": "집",
+      "top": "01\n집\n0.297\n02\n열쇠\n0.254\n03\n눈사람\n0.248",
+      "center": [
+        320,
+        195
+      ],
+      "closest": "house"
+    },
+    {
+      "name": "나무",
+      "top": "01\n나무\n0.269\n02\n눈사람\n0.249\n03\n산\n0.240",
+      "center": [
+        320,
+        195
+      ],
+      "closest": "tree"
+    },
+    {
+      "name": "고양이",
+      "top": "01\n고양이\n0.288\n02\n토끼\n0.256\n03\n강아지\n0.248",
+      "center": [
+        320,
+        195
+      ],
+      "closest": "cat"
+    }
+  ],
+  "live": {
+    "top": "집",
+    "ms": 273.80000000074506,
+    "dimension": 512,
+    "target": "목표 집 · cosine 0.2997 · 1위 / 40개 후보 (파란 테두리)",
+    "closest": "house"
+  },
+  "mobileOverflow": false,
+  "errors": []
+}

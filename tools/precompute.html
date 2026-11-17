@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- 인트로 설명용 값을 실제 모델로 미리 계산한다. 결과는 window.__out 에 담기고, tools/precompute.mjs 가 js/intro-data.js 로 저장한다.
+     사이트와 같은 모델·문장 틀·후보 단어(js/words.js)를 쓰므로, 단어 목록을 바꾸면 다시 실행해야 한다. -->
+<meta charset="utf-8">
+<script type="module">
+import { Clip, dot, softmax } from '../js/clip.js';
+import { WORDS, PROMPT_TEMPLATE } from '../js/words.js';
+
+// 인트로 예시 그림: 집 (적합성 테스트의 '집 1'과 같은 선)
+const SKETCH = [
+  [[.25, .5], [.25, .82], [.75, .82], [.75, .5]],
+  [[.2, .52], [.5, .22], [.8, .52]],
+  [[.44, .82], [.44, .66], [.56, .66], [.56, .82]],
+  [[.3, .57], [.4, .57], [.4, .65], [.3, .65], [.3, .57]],
+];
+const TEXT_KEY = 'house'; // 2단계에서 문장 → 벡터로 보여줄 단어
+
+// 사이트(js/app.js)와 같은 조건으로 그린다: 512px, 선 굵기 7px
+const SIZE = 512;
+function render(strokes) {
+  const c = document.createElement('canvas'); c.width = c.height = SIZE;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, SIZE, SIZE);
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 7; ctx.lineCap = ctx.lineJoin = 'round';
+  for (const st of strokes) { ctx.beginPath(); st.forEach(([x, y], i) => i ? ctx.lineTo(x * SIZE, y * SIZE) : ctx.moveTo(x * SIZE, y * SIZE)); ctx.stroke(); }
+  return c;
+}
+
+const clip = new Clip({ dtype: 'q8', device: 'wasm' });
+await clip.load();
+const imageVec = await clip.embedImage(render(SKETCH));
+const textVecs = await clip.embedTexts(WORDS.map(w => PROMPT_TEMPLATE.replace('{}', w.en)));
+const r4 = v => Array.from(v, x => +x.toFixed(4));
+
+// 첫 화면 미니 데모: 선을 1개, 2개, … 그렸을 때 각각의 상위 3개 단어와 확률
+const progression = [];
+for (let k = 1; k <= SKETCH.length; k++) {
+  const emb = await clip.embedImage(render(SKETCH.slice(0, k)));
+  const probs = softmax(textVecs.map(t => dot(emb, t)));
+  const top = probs.map((p, i) => [p, i]).sort((a, b) => b[0] - a[0]).slice(0, 3)
+    .map(([p, i]) => ({ key: WORDS[i].key, ko: WORDS[i].ko, prob: +p.toFixed(4) }));
+  progression.push({ strokes: k, top });
+}
+window.__out = {
+  model: 'Xenova/clip-vit-base-patch32 (q8)',
+  template: PROMPT_TEMPLATE,
+  sketch: SKETCH,
+  imageVec: r4(imageVec),
+  textKey: TEXT_KEY,
+  textVec: r4(textVecs[WORDS.findIndex(w => w.key === TEXT_KEY)]),
+  words: WORDS.map((w, i) => ({ key: w.key, en: w.en, ko: w.ko, cos: +dot(imageVec, textVecs[i]).toFixed(5) })),
+  progression,
+};
+</script>

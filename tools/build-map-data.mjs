@@ -1,0 +1,3 @@
+import fs from 'node:fs';import puppeteer from 'puppeteer-core';
+const b=await puppeteer.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
+try{const p=await b.newPage();p.on('pageerror',e=>console.error(e.message));await p.goto('http://localhost:8080/tools/map-data.html');await p.waitForFunction('window.__mapData || window.__mapError',{timeout:600000});const r=await p.evaluate(()=>({data:window.__mapData,error:window.__mapError}));if(r.error)throw new Error(r.error);fs.writeFileSync('js/map-data.js','// Actual CLIP embeddings.\nexport const MAP_DATA = '+JSON.stringify(r.data)+';\n');console.log('Saved real vectors:',r.data.textVectors.length,'words,',r.data.samples.length,'sketches');}finally{await b.close();}
