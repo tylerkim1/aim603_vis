@@ -1,4 +1,5 @@
 import { dot } from './clip.js';
+import { reducedMotion as reduced } from './motion.js';
 const NS='http://www.w3.org/2000/svg';
 const CENTER=[320,195], INNER=52, OUTER=152;
 const make=(tag,attrs={})=>{const el=document.createElementNS(NS,tag);for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);return el;};
@@ -37,7 +38,7 @@ export class EmbeddingMap {
     });
     this.query=make('g',{'class':'map-query',opacity:0,transform:'translate('+CENTER.join(',')+')'});
     this.query.append(make('circle',{r:13,'class':'query-halo'}),make('circle',{r:5.5}));
-    const label=make('text',{x:0,y:31,'text-anchor':'middle'});label.textContent='내 그림';this.query.append(label);this.svg.append(this.query);
+    const label=make('text',{x:0,y:33,'text-anchor':'middle'});label.textContent='내 그림';this.query.append(label);this.svg.append(this.query);
     this.nearestLabel=make('text',{x:22,y:24,'class':'map-nearest-label'});this.svg.append(this.nearestLabel);
     this.empty=make('text',{x:22,y:375,'class':'map-empty'});this.svg.append(this.empty);
     this.render();
@@ -50,7 +51,7 @@ export class EmbeddingMap {
     this.query.querySelector('text').textContent=label;this.current=CENTER;
     cancelAnimationFrame(this.raf);
     // Shared radial reveal preserves the distance ordering throughout animation.
-    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,start=performance.now();
+    const start=performance.now();
     const tick=now=>{const t=reduced?1:Math.min(1,(now-start)/500);
       this.scale=.88+.12*(1-(1-t)**3);this.render();
       if(t<1)this.raf=requestAnimationFrame(tick);
@@ -64,7 +65,7 @@ export class EmbeddingMap {
     const data=this.layout||fallback;
     const points=data.points.map(p=>p.map((x,i)=>CENTER[i]+(x-CENTER[i])*this.scale));
     this.points=points;
-    const occupied=[{x:284,y:211,w:80,h:25}];
+    const occupied=[{x:276,y:211,w:88,h:28}];
     const priority=points.map((_,i)=>i).sort((a,b)=>(active.includes(b)?3:b===this.selected?2:b===this.target?1:0)-(active.includes(a)?3:a===this.selected?2:a===this.target?1:0));
     for(const i of priority){
       const g=this.nodes[i],[x,y]=points[i];g.setAttribute('transform','translate('+x+','+y+')');
@@ -73,12 +74,12 @@ export class EmbeddingMap {
       g.classList.toggle('selected',i===this.selected);g.classList.toggle('target',i===this.target);
       const title=this.cosines?this.words[i].ko+' · cosine '+this.cosines[i].toFixed(4):this.words[i].ko;
       g.setAttribute('aria-label',title);g.querySelector('title').textContent=title;
-      const text=g.querySelector('text'),w=this.words[i].ko.length*12+6;
+      const text=g.querySelector('text'),w=this.words[i].ko.length*14+6;
       let best=null,bestCost=Infinity;
-      for(const dy of [-8,8,22,-22])for(const dx of [10,-w-10]){
-        const box={x:x+dx,y:y+dy-11,w,h:14};
-        const overlaps=occupied.filter(b=>box.x<b.x+b.w&&box.x+w>b.x&&box.y<b.y+b.h&&box.y+14>b.y).length;
-        const cost=overlaps*100+Math.abs(dy+8)+(box.x<8||box.x+w>630||box.y<30||box.y+14>360?1000:0);
+      for(const dy of [-9,9,25,-25])for(const dx of [10,-w-10]){
+        const box={x:x+dx,y:y+dy-13,w,h:16};
+        const overlaps=occupied.filter(b=>box.x<b.x+b.w&&box.x+w>b.x&&box.y<b.y+b.h&&box.y+16>b.y).length;
+        const cost=overlaps*100+Math.abs(dy+9)+(box.x<8||box.x+w>630||box.y<30||box.y+16>360?1000:0);
         if(cost<bestCost){bestCost=cost;best={dx,dy,box};}
       }
       text.setAttribute('x',best.dx);text.setAttribute('y',best.dy);

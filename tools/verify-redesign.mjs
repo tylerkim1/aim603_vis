@@ -14,7 +14,8 @@ try {
  await p.goto('http://localhost:8080/');
  await p.waitForSelector('#introMap .map-node');
  await p.waitForFunction(()=>document.querySelector('#sampleName').textContent==='집');
- await new Promise(r=>setTimeout(r,1200));
+ await p.evaluate(()=>document.querySelectorAll('[data-reveal]').forEach(e=>e.classList.add('in')));
+ await new Promise(r=>setTimeout(r,3600));
  await p.screenshot({path:'screenshots/redesign-intro.png',fullPage:true});
  out.samples=[];
  for(let i=0;i<3;i++){
@@ -31,7 +32,7 @@ try {
  await p.$eval('#story1',e=>e.scrollIntoView({behavior:'instant',block:'start'}));
  await p.screenshot({path:'screenshots/similarity-centered.png'});
  await p.waitForFunction(()=>!document.getElementById('startBtn').disabled,{timeout:240000});
- await p.click('#startBtn');
+ await p.click('#startBtn');await screenReady(p,'studio');
  await p.select('#targetWord','house');
  const r=await p.$eval('#pad',e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
  const samples=MAP_DATA.samples[0].strokes;
@@ -51,12 +52,14 @@ try {
  await p.screenshot({path:'screenshots/redesign-result.png',fullPage:true});
  await p.click('#againBtn');assert.equal(await p.$eval('#liveMap .map-query',e=>e.getAttribute('opacity')),'0');
  // Clear while inference may be pending; stale results must not restore the query.
+ await screenReady(p,'studio');
  await p.evaluate(s=>window.__app.setStrokes(s),samples);
  await new Promise(r=>setTimeout(r,150));await p.click('#clearBtn');
  await p.waitForFunction(()=>!window.__app.busy&&window.__app.lastResult===null);
  assert.equal(await p.$eval('#liveMap .map-query',e=>e.getAttribute('opacity')),'0');
  await p.setViewport({width:390,height:844});await p.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);await p.reload();
  await p.waitForSelector('#introMap .map-node');
+ await p.evaluate(()=>document.querySelectorAll('[data-reveal]').forEach(e=>e.classList.add('in')));
  await p.waitForFunction(()=>document.querySelector('#introMap .map-query').getAttribute('opacity')==='1');
  out.mobileOverflow=await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
  await p.screenshot({path:'screenshots/redesign-mobile.png',fullPage:true});
@@ -64,4 +67,5 @@ try {
  out.errors=errors;fs.writeFileSync('screenshots/redesign-checks.json',JSON.stringify(out,null,2));console.log(JSON.stringify(out,null,2));
 }finally{await b.close();}
 
+async function screenReady(p,id){await p.waitForFunction(id=>!document.getElementById(id).hidden&&!window.__app.busy,{},id);await new Promise(r=>setTimeout(r,800));}
 async function mapOrderMatches(p,id){return p.evaluate(id=>{const map=id==='introMap'?window.__intro.map:window.__app.liveMap;const q=document.querySelector('#'+id+' .map-query').transform.baseVal.consolidate().matrix;const radii=[...document.querySelectorAll('#'+id+' .map-node')].map(n=>{const m=n.transform.baseVal.consolidate().matrix;return Math.hypot(m.e-q.e,m.f-q.f);});for(let i=0;i<radii.length;i++)for(let j=0;j<radii.length;j++)if(map.cosines[i]>map.cosines[j]+1e-10&&radii[i]>=radii[j])return false;return true;},id);}

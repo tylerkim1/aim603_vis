@@ -3,6 +3,13 @@ import { WORDS, PROMPT_TEMPLATE } from './words.js';
 import { RankedBars, formatPct } from './viz.js';
 import { startExplainer } from './intro.js';
 import { EmbeddingMap } from './embedding-map.js';
+import { startHero } from './hero.js';
+import { reducedMotion } from './motion.js';
+
+document.documentElement.classList.add('js'); // 스크롤 등장 효과는 스크립트가 있을 때만 숨긴 상태에서 시작한다
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+// 같은 애니메이션 클래스를 다시 붙여 처음부터 재생한다
+function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -31,7 +38,8 @@ async function boot() {
     for(const w of WORDS){const o=document.createElement('option');o.value=w.key;o.textContent=w.ko;$('targetWord').append(o);}
     $('targetWord').onchange=()=>{liveMap.setTarget($('targetWord').value);if(lastResult)showTarget(lastResult);};
     setStart('직접 그려보기', true);
-    bar.parentElement.hidden = true;
+    for (const b of startBtns) replay(b, 'ready');
+    bar.parentElement.style.opacity = '0';
   } catch (e) {
     console.error(e);
     setStart('준비 실패', false);
@@ -113,7 +121,7 @@ function afterChange() {
 }
 
 // ---------------------------------------------------------------- 실시간 분석
-const liveBars = new RankedBars($('liveBars'), WORDS, { rows: 4, rowHeight: 34 });
+const liveBars = new RankedBars($('liveBars'), WORDS, { rows: 4, rowHeight: 36 });
 liveBars.clear();
 let timer = null, busy = false, dirty = false;
 let lastResult = null; // { cosines, probs, top, ms, strokeCount }
@@ -145,7 +153,7 @@ async function analyze() {
 }
 
 function showEmpty() {
-  $('liveWord').textContent = '—'; $('liveWord').classList.add('empty');
+  $('liveWord').textContent = '—'; $('liveWord').classList.add('empty'); $('liveWord').classList.remove('swap');
   $('liveSub').textContent = '아직 아무것도 그리지 않았어요';
   $('liveStatus').textContent = '';
   liveBars.clear(); liveMap?.clear();
@@ -153,6 +161,7 @@ function showEmpty() {
 }
 function showLive(r) {
   const w = WORDS[r.top], p = r.probs[r.top];
+  if ($('liveWord').textContent !== w.ko) { replay($('liveWord'), 'swap'); replay($('liveSub'), 'swap'); } // 1위가 바뀔 때만 강조
   $('liveWord').textContent = w.ko; $('liveWord').classList.remove('empty');
   $('liveSub').textContent = `${WORDS.length}개 후보 중 상대 점수 ${formatPct(p)}`;
   $('liveStatus').textContent = `분석 ${r.ms.toFixed(0)} ms · ${MODEL_ID} (${clip.dtype}, ${clip.device})`;
@@ -167,7 +176,7 @@ function showTarget(r) {
 }
 // ---------------------------------------------------------------- 결과 + 선 중요도
 const resultPad = $('resultPad'), resultCtx = resultPad.getContext('2d');
-const resultBars = new RankedBars($('resultBars'), WORDS, { rows: 5, rowHeight: 34 });
+const resultBars = new RankedBars($('resultBars'), WORDS, { rows: 5, rowHeight: 36 });
 let finishing = false;
 
 $('doneBtn').onclick = finish;
@@ -187,7 +196,7 @@ async function finish() {
   const w = WORDS[base.top], p0 = base.probs[base.top];
 
   // 결과 화면 먼저 보여주고, 선 중요도는 그 위에서 계산
-  show('result');
+  const shown = show('result');
   render(resultCtx, resultPad.width, final);
   $('resultWord').textContent = w.ko;
   $('resultSub').textContent = `${w.en.replace(/^(a|an|the) /, '')} · ${WORDS.length}개 후보 중 상대 점수 ${formatPct(p0)}`;
@@ -195,6 +204,8 @@ async function finish() {
   resultMap?.setTarget($('targetWord').value); resultMap?.update(base.embedding,base.cosines,{trail:false});
   fillTable(base);
   $('importanceLegend').hidden = true;
+  $('importanceCaption').textContent = '';
+  await shown;
 
   const units = groupUnits(final.length);
   if (units.length < 2) {
@@ -203,10 +214,10 @@ async function finish() {
     finishing = false; $('againBtn').disabled=false; return;
   }
 
-  // 단위를 하나씩 빼고 다시 판단시켜 '정답 단어' 상대 점수이 얼마나 떨어지는지 잰다
+  // 단위를 하나씩 빼고 다시 판단시켜 '정답 단어' 상대 점수가 얼마나 떨어지는지 잰다
   const drops = [];
   for (let u = 0; u < units.length; u++) {
-    $('importanceCaption').textContent = `선을 하나씩 지워 보며 "${w.ko}" 상대 점수이 얼마나 변하는지 재는 중… ${u + 1}/${units.length}`;
+    $('importanceCaption').textContent = `선을 하나씩 지워 보며 "${w.ko}" 상대 점수가 얼마나 변하는지 재는 중… ${u + 1}/${units.length}`;
     const rest = final.filter((_, i) => !units[u].includes(i));
     render(inferCtx, INFER_SIZE, rest);
     const r = score(await clip.embedImage(infer));
@@ -215,12 +226,13 @@ async function finish() {
   const maxDrop = Math.max(...drops);
   const importance = final.map(() => 0);
   units.forEach((idxs, u) => idxs.forEach(i => { importance[i] = maxDrop > 0.01 ? Math.max(0, drops[u]) / maxDrop : 1; }));
-  render(resultCtx, resultPad.width, final, i => { const v = Math.round(210 * (1 - importance[i])); return `rgb(${v},${v},${v})`; });
+  // 검은 선에서 중요도 색으로 서서히 바뀐다
+  await tween(700, k => render(resultCtx, resultPad.width, final, i => { const v = Math.round(210 * (1 - importance[i]) * k); return `rgb(${v},${v},${v})`; }));
 
   const most = drops.indexOf(maxDrop);
   if (maxDrop > 0.01) {
     $('importanceCaption').textContent =
-      `선을 하나씩 지워 보며 "${w.ko}" 상대 점수이 얼마나 떨어지는지 쟀습니다. 가장 중요한 선을 지우면 ${formatPct(p0)}에서 ${formatPct(p0 - maxDrop)}로 떨어집니다.` +
+      `선을 하나씩 지워 보며 "${w.ko}" 상대 점수가 얼마나 떨어지는지 쟀습니다. 가장 중요한 선을 지우면 ${formatPct(p0)}에서 ${formatPct(p0 - maxDrop)}로 떨어집니다.` +
       (units.length < final.length ? ` (선 ${final.length}개를 ${units.length}묶음으로 나눠 분석)` : '');
     $('importanceLegend').hidden = false;
   } else {
@@ -246,10 +258,29 @@ function fillTable(r) {
     order.map((i, k) => `<tr><td>${k + 1}</td><td>${WORDS[i].ko} <span class="hint">${WORDS[i].en}</span></td><td class="num">${(r.probs[i] * 100).toFixed(1)}%</td><td class="num">${r.cosines[i].toFixed(4)}</td></tr>`).join('');
 }
 
+// 0→1로 진행하는 값을 매 프레임 넘겨 준다 (동작 줄이기 설정이면 바로 1)
+function tween(ms, draw) {
+  if (reducedMotion) { draw(1); return Promise.resolve(); }
+  return new Promise(done => {
+    const start = performance.now();
+    const tick = now => { const t = Math.min(1, (now - start) / ms); draw(1 - (1 - t) ** 3); t < 1 ? requestAnimationFrame(tick) : done(); };
+    requestAnimationFrame(tick);
+  });
+}
+
 // ---------------------------------------------------------------- 화면 전환
-function show(id) {
-  for (const s of ['intro', 'studio', 'result']) $(s).hidden = s !== id;
-  window.scrollTo(0, 0);
+// 지금 화면이 위로 사라진 뒤 다음 화면이 아래에서 떠오른다
+const SCREENS = ['intro', 'studio', 'result'];
+let switching = false;
+async function show(id) {
+  const from = SCREENS.find(s => !$(s).hidden);
+  if (from === id) return;
+  switching = true;
+  if (from && !reducedMotion) { $(from).classList.add('leaving'); await sleep(220); $(from).classList.remove('leaving'); }
+  for (const s of SCREENS) $(s).hidden = s !== id;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  replay($(id), 'entering');
+  switching = false;
 }
 for (const b of startBtns) b.onclick = () => { show('studio'); redrawPad(); };
 $('againBtn').onclick = () => {
@@ -261,6 +292,7 @@ $('againBtn').onclick = () => {
 };
 
 redrawPad();
+startHero();
 startExplainer($('explainer'));
 boot();
 
@@ -269,7 +301,7 @@ window.__app = {
   get strokes() { return strokes; },
   setStrokes(list) { strokes = list.map(pts => ({ pts })); redrawPad(); afterChange(); },
   get lastResult() { return lastResult; },
-  get busy() { return busy || finishing; },
+  get busy() { return busy || finishing || switching; },
   finish,
   get liveMap(){return liveMap;},
 };

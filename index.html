@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>무엇을 그렸나요? — KAIST Visualization Project</title>
+<title>내 그림은 어디에 가까울까요? — KAIST Visualization Project</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="data:,">
@@ -13,22 +13,29 @@
 
 
   <section id="intro" class="screen">
-    <nav class="intro-nav"><span class="eyebrow">KAIST · VISUALIZATION LAB</span><a href="#story1">작동 원리 ↗</a></nav>
+    <nav class="intro-nav"><span class="eyebrow">KAIST AIM.60003</span><a href="#story1">작동 원리 ↓</a></nav>
     <div class="intro-hero">
       <div class="intro-copy"><p class="kicker">A DRAWING, A PLACE IN MEANING.</p><h1>내 그림은<br>어디에 가까울까요?</h1>
       <p class="lead">선 몇 개가 하나의 의미가 되는 과정.<br>그림과 단어가 만나는 공간을 탐험해 보세요.</p>
       <div class="hero-actions"><button id="startBtn" class="btn primary start-btn" disabled>모델 준비 중</button><a href="#story1" class="text-link">먼저 살펴보기 ↓</a></div>
-      <div class="progress"><div id="progressBar"></div></div><p id="loadError" class="error" hidden></p></div>
-      <div class="hero-diagram" aria-label="그림을 임베딩으로 바꾸고 가까운 단어를 찾습니다">
-        <div class="hero-sketch"><svg viewBox="0 0 180 160"><path d="M35 75 L90 25 L145 75 M45 68 V140 H135 V68 M80 140 V103 H102 V140 M57 85 H73 V101 H57 Z"/></svg><span>내가 그린 선</span></div>
-        <div class="flow-bridge"><span>512차원 임베딩</span><i></i><small>그림의 특징을 담은 벡터</small></div>
-        <div class="meaning-label"><span class="meaning-dot"></span><strong>집</strong><span>모델이 읽은 의미</span></div>
+      <div class="progress"><div id="progressBar"></div></div><p id="loadError" class="error" hidden></p>
+      <ul class="hero-facts"><li><strong>40개</strong>후보 단어</li><li><strong>512차원</strong>그림·문장 임베딩</li><li><strong>브라우저 안</strong>에서 모두 계산</li></ul></div>
+      <div class="hero-visual">
+        <div class="hero-stage" id="heroStage" role="img" aria-label="예시 그림이 512차원 벡터로 바뀌고, 그 벡터와 가장 가까운 단어를 찾는 과정">
+          <div class="stage-step"><span class="stage-label"><b>01</b>그린 선</span><canvas id="heroSketch" width="356" height="356"></canvas><p class="stage-note" id="heroName">예시 그림</p></div>
+          <div class="stage-arrow"><i></i></div>
+          <div class="stage-step"><span class="stage-label"><b>02</b>512차원 벡터</span><div id="heroVector" class="vector-grid"></div><p class="stage-note">앞 64개 값 ·<br>진할수록 큰 값</p></div>
+          <div class="stage-arrow"><i></i></div>
+          <div class="stage-step"><span class="stage-label"><b>03</b>가까운 단어</span><div id="heroWords"></div><p class="stage-note">후보 40개 중 cosine 상위 3개</p></div>
+        </div>
+        <div class="stage-dots" id="heroDots" role="group" aria-label="예시 그림 선택"></div>
       </div>
+      <a href="#story1" class="scroll-cue" aria-label="작동 원리로 이동"><span>SCROLL</span><i></i></a>
     </div>
     <div id="explainer">
       <article class="story" id="story1">
-        <div class="section-heading"><div><p class="kicker">01 / SIMILARITY MAP</p><h2>내 그림을 중심으로, 가까운 의미 찾기</h2></div><p>주황 점은 그림, 주변 점은 후보 단어입니다.<br>중심에 가까울수록 실제 cosine이 높습니다.</p></div>
-        <div class="space-panel">
+        <div class="section-heading" data-reveal><div><p class="kicker">01 / SIMILARITY MAP</p><h2>내 그림을 중심으로, 가까운 의미 찾기</h2></div><p>주황 점은 그림, 주변 점은 후보 단어입니다.<br>중심에 가까울수록 실제 cosine이 높습니다.</p></div>
+        <div class="space-panel" data-reveal style="--d:120ms">
           <div class="space-toolbar"><div class="sample-tabs" role="group" aria-label="예시 그림 선택"></div><div class="map-legend"><span><i class="orange"></i>그림</span><span><i class="teal"></i>가장 가까운 후보</span></div></div>
           <div class="space-layout"><div id="introMap"></div><aside class="sample-side"><div class="sample-top"><canvas id="sampleSketch" width="320" height="320" aria-label="자동 생성 예시 그림"></canvas><div><span class="micro">예시 그림</span><strong id="sampleName"></strong><button id="replaySketch" class="text-link" type="button">다시 보기 ↻</button></div></div><p class="list-heading">그림과 가까운 단어 <span>cosine</span></p><div id="introNeighbors"></div><p id="selectionNote" class="selection-note" aria-live="polite"></p></aside></div>
           <div class="map-footer"><span>실제 모델 값 · 자동 생성 스케치</span><details><summary>이 지도 읽는 법</summary><p id="projectionNote">그림을 중심에 고정하고, 실제 512차원 cosine이 높은 후보일수록 가깝게 놓습니다. 작은 차이를 읽기 쉽게 각 그림의 후보 범위에 맞춰 거리를 펼칩니다. 중심과 후보의 상대적인 유사도만 나타내며, 단어끼리의 거리나 방향은 의미하지 않습니다. 절대 유사도는 cosine 수치를 확인하세요.</p></details></div>
@@ -36,14 +43,16 @@
         <p class="projection-caption">중심에서의 거리 = 이 그림과의 상대 유사도. 단어끼리의 거리와 방향에는 의미를 부여하지 않습니다.</p>
       </article>
       <article class="story" id="story2">
-        <div class="section-heading"><div><p class="kicker">02 / COSINE SIMILARITY</p><h2>가깝다는 건, 같은 방향이라는 것</h2></div><p>두 벡터의 각도가 작을수록 cosine은 커집니다.<br>위에서 선택한 그림의 실제 값을 비교해 보세요.</p></div>
+        <div class="section-heading" data-reveal><div><p class="kicker">02 / COSINE SIMILARITY</p><h2>가깝다는 건, 각도가 더 작다는 것</h2></div><p>두 벡터의 각도가 작을수록 cosine은 커집니다.<br>절대 각도보다 후보 사이의 차이를 봅니다.</p></div>
         <div class="comparison-grid">
-          <div class="angle-card"><p class="list-heading">그림 ↔ 선택한 단어 <span id="angleTarget"></span></p><svg id="cosineAngle" viewBox="0 0 400 240" role="img" aria-label="선택한 그림과 문장 벡터 사이 실제 각도"></svg><div class="angle-stats"><span>각도 <strong id="angleDegrees"></strong></span><span>cosine <strong id="angleCosine"></strong></span></div><div id="angleChoices" class="angle-choices"></div><p class="micro">두 벡터의 실제 각도를 평면에 펼친 도식입니다.</p></div>
-          <div class="scores-card"><p class="list-heading">후보 사이의 상대 점수 <span>합계 100%</span></p><div id="introScores"></div><p class="score-note">cosine 차이를 softmax로 변환한 상대값입니다.<br><b>정답일 확률을 뜻하지 않으며</b>, 후보 목록에 따라 달라집니다.</p><details><summary>계산식 보기</summary><p class="formula">cos θ = (그림 · 문장) / (|그림| × |문장|)<br>상대 점수 = exp(100 × cosine) / 모든 후보의 exp 값 합</p></details></div>
+          <div class="angle-card" data-reveal style="--d:100ms"><p class="list-heading">그림 ↔ 선택한 단어 <span id="angleTarget"></span></p><svg id="cosineAngle" viewBox="0 0 400 226" role="img" aria-label="그림 벡터와 후보 40개 문장 벡터 사이의 실제 각도"></svg><div class="angle-stats"><span>각도 <strong id="angleDegrees"></strong></span><span>cosine <strong id="angleCosine"></strong></span><span>순위 <strong id="angleRank"></strong></span></div><div id="angleChoices" class="angle-choices"></div>
+            <p class="zoom-head"><strong>후보 40개의 각도만 확대</strong><span id="zoomRange"></span></p><svg id="angleZoom" viewBox="0 0 400 104" role="img" aria-label="후보 40개의 각도 분포 확대"></svg>
+            <p class="angle-note">그림과 문장은 서로 다른 종류의 입력이라, CLIP에서는 가장 잘 맞는 짝도 70° 안팎입니다. 그래서 0°에 가까운지가 아니라 <b>다른 후보보다 얼마나 더 작은지</b>를 봅니다.</p></div>
+          <div class="scores-card" data-reveal style="--d:220ms"><p class="list-heading">후보 사이의 상대 점수 <span>합계 100%</span></p><div id="introScores"></div><p class="score-note">cosine 차이를 softmax로 변환한 상대값입니다.<br><b>정답일 확률을 뜻하지 않으며</b>, 후보 목록에 따라 달라집니다.</p><details open><summary>계산식 보기</summary><p class="formula">cos θ = (그림 · 문장) / (|그림| × |문장|)<br>상대 점수 = exp(100 × cosine) / 모든 후보의 exp 값 합</p></details></div>
         </div>
       </article>
     </div>
-    <div class="intro-cta"><div><p class="kicker">YOUR TURN</p><h2>이번에는, 당신의 그림으로.</h2><p>한 획을 마칠 때마다 가까운 단어들이 그림 주위에 새롭게 모입니다.</p></div><button class="btn primary start-btn" disabled>모델 준비 중</button></div>
+    <div class="intro-cta" data-reveal><div><p class="kicker">YOUR TURN</p><h2>이번에는, 당신의 그림으로.</h2><p>한 획을 마칠 때마다 가까운 단어들이 그림 주위에 새롭게 모입니다.</p></div><button class="btn primary start-btn" disabled>모델 준비 중</button></div>
     <p class="foot">그림은 브라우저 안에서 처리됩니다. 최초 실행에는 모델 다운로드를 위한 인터넷 연결이 필요합니다.</p>
   </section>
   <!-- 2. 그리기 -->
