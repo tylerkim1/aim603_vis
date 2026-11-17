@@ -56,7 +56,7 @@
             <div class="amp-head"><div><p class="amp-title">작은 각도 차이가 큰 점수 차이가 되는 과정</p><p class="amp-sub"><span id="ampPair"></span><button id="ampReplay" class="text-link" type="button">다시 재생 ↻</button></p></div>
               <div class="amp-read"><span><small>배율</small><strong id="ampScale"></strong></span><span class="first"><small id="ampTopName"></small><strong id="ampTop"></strong></span><span><small id="ampOtherName"></small><strong id="ampOther"></strong></span><span class="hot"><small>점수 차이</small><strong id="ampRatio"></strong></span></div></div>
             <svg id="ampChart" viewBox="0 0 1000 312" role="img" aria-label="cosine에 곱하는 배율이 1에서 100으로 커질 때 후보 40개의 상대 점수 변화"></svg>
-            <ul class="amp-why"><li><b>%의 뜻</b>후보 40개 안에서 모델이 각 단어에 준 몫입니다(합계 100%). 40개 중 어느 쪽으로 기울었는지를 나타내며, 실제로 정답일 확률은 아닙니다.</li><li><b>계산</b>위 계산식의 100 자리에 배율을 넣은 값입니다. cosine에 배율을 곱해 지수(exp)에 넣고, 40개의 합으로 나눕니다. <span id="ampMath"></span></li><li><b>왜 100</b>CLIP이 학습 과정에서 정한 배율입니다. 후보 사이의 cosine 차이는 0.1도 안 되어, 그대로 쓰면 40개의 점수가 거의 같습니다.</li></ul>
+            <p class="amp-why">%는 후보 40개 안에서의 몫입니다(정답일 확률이 아닙니다). 각 지점은 위 계산식의 100 자리에 그 배율을 넣어 계산한 값입니다.</p>
           </div>
         </div>
       </article>

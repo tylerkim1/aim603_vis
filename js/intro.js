@@ -97,8 +97,6 @@ export function startExplainer(){
     $('ampLabels').innerHTML='<g class="amp-right"><text class="amp-end first" x="'+(AX1+14)+'" y="'+(ampY(probs[top])+8).toFixed(1)+'">'+WORDS[top].ko+' '+pct(probs[top])+'</text>'+
       '<text class="amp-end" x="'+(AX1+14)+'" y="'+Math.min(ampY(probs[ampOther])+5,AY1-3).toFixed(1)+'">'+WORDS[ampOther].ko+' '+pct(probs[ampOther])+'</text></g>';
     $('ampPair').textContent='1위 '+WORDS[top].ko+' ↔ '+(order.indexOf(ampOther)+1)+'위 '+WORDS[ampOther].ko+' · 각도 '+(angles[ampOther]-angles[top]).toFixed(1)+'°, cosine '+(scores[top]-scores[ampOther]).toFixed(3)+' 차이';
-    const diff=scores[top]-scores[ampOther]; // 지수는 차이를 배수로 바꾼다: exp(배율 × 차이)
-    $('ampMath').textContent='지수는 차이를 배수로 바꾸므로, cosine 차이 '+diff.toFixed(3)+'은 ×1에서 exp('+diff.toFixed(3)+') = '+Math.exp(diff).toFixed(2)+'배, ×100에서 exp('+(diff*100).toFixed(1)+') = '+ratioText(Math.exp(diff*100))+'배가 됩니다.';
     $('ampTopName').textContent=WORDS[top].ko;$('ampOtherName').textContent=WORDS[ampOther].ko;
     playAmp(1600);
   }

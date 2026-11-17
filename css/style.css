@@ -82,7 +82,7 @@ html.reduce-motion{scroll-behavior:auto}.reduce-motion *,.reduce-motion *:before
 #ampChart .amp-end{font-size:16px;font-weight:600;fill:var(--ink)}#ampChart .amp-end.first{font-size:25px;fill:var(--teal)}
 .amp-gap{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:3 4}#ampChart .amp-gap-text{font-size:17px;font-weight:600;fill:var(--ink);paint-order:stroke;stroke:#fff;stroke-width:5px;stroke-linejoin:round}
 .amp-dot{fill:var(--teal);stroke:#fff;stroke-width:2}.amp-dot.other{fill:var(--ink)}
-.amp-why{list-style:none;display:grid;gap:5px;margin:6px 0 4px;padding:12px 16px;font-size:14px;line-height:1.7;color:var(--ink-2);background:#f5f9f6;border-radius:8px}.amp-why b{display:inline-block;min-width:62px;margin-right:8px;font-weight:600;color:var(--ink)}
+.amp-why{margin:8px 0 4px;text-align:center;font-size:14px;line-height:1.7;color:var(--ink-2)}
 
 .amp-right{opacity:0;transition:opacity .4s var(--ease)}#ampChart.full .amp-right{opacity:1}
 .amp-cursor{stroke:#c3d0c9;stroke-width:1}.amp-pill{fill:var(--ink)}#ampChart .amp-pill-text{fill:#fff;font-weight:600}
